@@ -48,7 +48,7 @@ a{color:var(--timber)}
 .eyebrow.dark{color:var(--timber)}
 
 /* Sections */
-.section{padding:72px 0}.alt{background:#f1e9d8}.dark{background:var(--walnut);color:#fff}
+.section{padding:72px 0}.alt{background:#f1e9d8}.dark{background:var(--walnut);color:#fff}.eyebrow.dark{background:none}
 h2{font-size:clamp(1.6rem,4.5vw,2.4rem);color:var(--walnut);line-height:1.2;margin:6px 0 18px}
 .dark h2{color:#fff}
 h3{font-size:1.1rem;color:var(--walnut);margin-bottom:6px}
