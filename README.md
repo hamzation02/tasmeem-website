@@ -70,3 +70,4 @@ Features that need an external service or backend: automatic form delivery to yo
 - Brand colours: gold `#D4AF37`, walnut `#4A2818`, timber `#8B5E3C`, cream `#FAF7F0` (top of `style.css`).
 
 > Note: in this upload-friendly version all images sit in the main folder, not in an images folder. Replace photos by uploading a file with the same name.
+
