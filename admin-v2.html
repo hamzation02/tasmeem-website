@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><title>Admin | TASMEEM WOODWORKS</title>
+<link rel="icon" href="favicon.png">
+<style>
+:root{--gold:#D4AF37;--walnut:#4A2818;--timber:#8B5E3C;--cream:#FAF7F0}
+*{box-sizing:border-box}body{margin:0;font:16px/1.5 system-ui,Arial,sans-serif;background:var(--cream);color:#2b1a10}
+header{background:var(--walnut);color:#fff;padding:14px 4%;display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid var(--gold)}
+h1{font-size:1.1rem;margin:0}main{max-width:760px;margin:0 auto;padding:20px 4%}
+.card{background:#fff;border-radius:12px;padding:18px;margin-bottom:16px;box-shadow:0 3px 12px rgba(74,40,24,.12)}
+label{display:block;font-weight:600;margin:10px 0 4px;color:var(--walnut)}
+input,textarea{width:100%;padding:11px;border:1.5px solid #bda68f;border-radius:8px;font:inherit;background:var(--cream)}
+button{padding:10px 18px;border:0;border-radius:999px;font:inherit;font-weight:700;cursor:pointer;background:var(--gold);color:var(--walnut);margin:10px 8px 0 0}
+button.alt{background:#eee;color:#333}button.del{background:#a11d1d;color:#fff}
+.row{border-top:1px solid #eee;padding:12px 0}.row b{color:var(--walnut)}.muted{color:#6b5646;font-size:.9rem}
+.err{color:#a11d1d}.hidden{display:none}
+.thumb{width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid var(--gold);float:left;margin:0 12px 6px 0}.badge{display:inline-block;background:var(--walnut);color:var(--gold);border-radius:999px;padding:1px 10px;font-size:.75rem;margin-left:6px}h3{color:var(--timber);border-bottom:2px solid var(--gold);padding-bottom:4px;margin:22px 0 4px}.g{clear:both;margin-top:8px;padding-left:10px;border-left:3px solid var(--gold)}.g .thumb{width:44px;height:44px}select{width:100%;padding:11px;border:1.5px solid #bda68f;border-radius:8px;font:inherit;background:var(--cream)}</style></head><body>
+<header><h1>TASMEEM WOODWORKS Admin</h1><button id="out" class="alt hidden">Log out</button></header>
+<main>
+<p id="cfgErr" class="card err hidden">Supabase settings missing.</p>
+<section id="login" class="card hidden"><h2>Admin login</h2>
+<label for="em">Email</label><input id="em" type="email" autocomplete="username">
+<label for="pw">Password</label><input id="pw" type="password" autocomplete="current-password">
+<button id="go">Log in</button><p id="lerr" class="err"></p></section>
+<section id="app" class="hidden">
+<div class="card"><h2 id="ft">Staff registration</h2><div id="fields"></div>
+<h3>Photos (stored privately)</h3>
+<label for="ph1">Staff passport photo</label><input id="ph1" type="file" accept="image/*">
+<label for="ph2">Guarantor passport photo</label><input id="ph2" type="file" accept="image/*">
+<p class="muted">When editing, choose a photo only if you want to replace the old one. Photos are shrunk before upload.</p>
+<p class="muted">Get the staff member's and guarantor's permission before saving their details. Do not store NIN, bank details or ID documents here.</p>
+<button id="save">Save</button><button id="cancel" class="alt hidden">Cancel edit</button><p id="ferr" class="err"></p></div>
+<div class="card"><h2>Staff list</h2><input id="q" placeholder="Search name, role or phone"><div id="list"></div></div>
+</section></main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+const SUPABASE_URL = "https://vmfcjvgwazutzlfmhddk.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZtZmNqdmd3YXp1dHpsZm1oZGRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMxMzAyNDgsImV4cCI6MjEwODcwNjI0OH0.th8McSLPqZonU5zZHj_27Xin0lUv_KMwhbqTtOSJKfA";
+const BUCKET = "staff-photos";
+const $ = id => document.getElementById(id);
+const FIELDS = [
+ ["h","Registration"],["staff_type","Staff type *","select:new=New staff,existing=Existing staff"],
+ ["h","Staff details"],["full_name","Full name *","text"],["gender","Gender","select:=Select,Male=Male,Female=Female"],["dob","Date of birth","date"],["phone","Phone","tel"],["email","Email","email"],["home_address","Home address","textarea"],["state_of_origin","State of origin","text"],["role","Role","text"],["start_date","Start date","date"],
+ ["h","Next of kin"],["nok_name","Next of kin name","text"],["nok_phone","Next of kin phone","tel"],
+ ["h","Guarantor"],["g_name","Guarantor full name","text"],["g_relationship","Relationship to staff","text"],["g_phone","Guarantor phone","tel"],["g_occupation","Guarantor occupation","text"],["g_address","Guarantor address","textarea"],
+ ["h","Notes"],["notes","Notes","textarea"]];
+const KEYS = FIELDS.filter(f => f[0] !== "h").map(f => f[0]);
+let db, rows = [], editId = null, urls = {};
+function el(t, txt, cls){ const e = document.createElement(t); if (txt) e.textContent = txt; if (cls) e.className = cls; return e; }
+(function build(){
+  const box = $("fields");
+  FIELDS.forEach(([k, label, type]) => {
+    if (k === "h") { box.append(el("h3", label)); return; }
+    const l = el("label", label); l.htmlFor = "f_" + k; let i;
+    if (type.startsWith("select:")) { i = el("select"); type.slice(7).split(",").forEach(o => { const [v, t] = o.split("="); const op = el("option", t); op.value = v; i.append(op); }); }
+    else if (type === "textarea") { i = el("textarea"); i.rows = 2; }
+    else { i = el("input"); i.type = type; }
+    i.id = "f_" + k; box.append(l, i);
+  });
+})();
+db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+db.auth.onAuthStateChange((_e, s) => show(!!s));
+db.auth.getSession().then(r => show(!!r.data.session));
+function show(on){ $("login").classList.toggle("hidden", on); $("app").classList.toggle("hidden", !on); $("out").classList.toggle("hidden", !on); if (on) load(); }
+$("go").onclick = async () => { $("lerr").textContent = "";
+  const { error } = await db.auth.signInWithPassword({ email: $("em").value.trim(), password: $("pw").value });
+  if (error) $("lerr").textContent = "Login failed. Check your email and password."; };
+$("out").onclick = () => db.auth.signOut();
+async function load(){
+  const { data, error } = await db.from("staff").select("*").order("full_name");
+  if (error) { $("list").textContent = "Could not load staff. Did you run supabase-upgrade.sql?"; return; }
+  rows = data; urls = {};
+  const paths = rows.flatMap(r => [r.photo_path, r.g_photo_path]).filter(Boolean);
+  if (paths.length) { const { data: s } = await db.storage.from(BUCKET).createSignedUrls(paths, 3600); (s || []).forEach(x => { if (x.signedUrl) urls[x.path] = x.signedUrl; }); }
+  draw();
+}
+function thumb(p){ if (!p || !urls[p]) return null; const i = el("img", "", "thumb"); i.src = urls[p]; i.alt = "photo"; return i; }
+function line(parent, label, val){ if (val) parent.append(el("div", label + ": " + val, "muted")); }
+function draw(){
+  const q = $("q").value.toLowerCase(), box = $("list"); box.textContent = "";
+  const f = rows.filter(r => ((r.full_name||"") + " " + (r.role||"") + " " + (r.phone||"")).toLowerCase().includes(q));
+  if (!f.length) { box.textContent = "No staff found."; return; }
+  f.forEach(r => {
+    const d = el("div", "", "row"), t = thumb(r.photo_path); if (t) d.append(t);
+    const b = el("b", r.full_name); b.append(el("span", r.staff_type === "existing" ? "Existing" : "New", "badge")); d.append(b);
+    line(d, "Role", r.role); line(d, "Phone", r.phone); line(d, "Email", r.email); line(d, "Gender", r.gender); line(d, "Born", r.dob);
+    line(d, "Address", r.home_address); line(d, "State of origin", r.state_of_origin); line(d, "Started", r.start_date);
+    line(d, "Next of kin", [r.nok_name, r.nok_phone].filter(Boolean).join(", "));
+    if (r.notes) d.append(el("div", r.notes));
+    if (r.g_name || r.g_phone || r.g_photo_path) {
+      const g = el("div", "", "g"), gt = thumb(r.g_photo_path); if (gt) g.append(gt);
+      g.append(el("b", "Guarantor: " + (r.g_name || "")));
+      line(g, "Relationship", r.g_relationship); line(g, "Phone", r.g_phone); line(g, "Occupation", r.g_occupation); line(g, "Address", r.g_address); d.append(g);
+    }
+    const e = el("button", "Edit", "alt"); e.onclick = () => edit(r);
+    const x = el("button", "Delete", "del"); x.onclick = () => remove(r);
+    const w = el("div"); w.style.clear = "both"; w.append(e, x); d.append(w); box.append(d);
+  });
+}
+$("q").oninput = draw;
+function edit(r){ editId = r.id; $("ft").textContent = "Edit staff member"; $("cancel").classList.remove("hidden");
+  KEYS.forEach(k => $("f_" + k).value = r[k] || (k === "staff_type" ? "new" : ""));
+  $("ph1").value = ""; $("ph2").value = ""; window.scrollTo({ top: 0, behavior: "smooth" }); }
+function reset(){ editId = null; $("ft").textContent = "Staff registration"; $("cancel").classList.add("hidden");
+  KEYS.forEach(k => $("f_" + k).value = k === "staff_type" ? "new" : ""); $("ph1").value = ""; $("ph2").value = ""; }
+reset(); $("cancel").onclick = reset;
+function shrink(file){ return new Promise((res, rej) => { const img = new Image();
+  img.onload = () => { const s = Math.min(1, 800 / Math.max(img.width, img.height)), c = document.createElement("canvas");
+    c.width = Math.round(img.width * s); c.height = Math.round(img.height * s); c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+    c.toBlob(b => b ? res(b) : rej(new Error("blob")), "image/jpeg", 0.8); };
+  img.onerror = () => rej(new Error("image")); img.src = URL.createObjectURL(file); }); }
+$("save").onclick = async () => {
+  const err = $("ferr"); err.textContent = "";
+  const rec = {}; KEYS.forEach(k => { const v = $("f_" + k).value.trim(); rec[k] = v || null; });
+  if (!rec.full_name) { err.textContent = "Full name is required."; return; }
+  rec.staff_type = rec.staff_type || "new";
+  const id = editId || crypto.randomUUID(); rec.id = id;
+  try {
+    for (const [inp, col, name] of [["ph1", "photo_path", "photo"], ["ph2", "g_photo_path", "guarantor"]]) {
+      const f = $(inp).files[0]; if (!f) continue;
+      const path = id + "/" + name + ".jpg", blob = await shrink(f);
+      const { error } = await db.storage.from(BUCKET).upload(path, blob, { upsert: true, contentType: "image/jpeg" });
+      if (error) throw error; rec[col] = path;
+    }
+  } catch (e) { err.textContent = "Photo upload failed. Use a normal JPG or PNG photo."; return; }
+  const { error } = await db.from("staff").upsert(rec);
+  if (error) { err.textContent = "Could not save. Did you run supabase-upgrade.sql and log in as admin?"; return; }
+  reset(); load();
+};
+async function remove(r){ if (!confirm("Delete " + r.full_name + " and their photos?")) return;
+  const p = [r.photo_path, r.g_photo_path].filter(Boolean); if (p.length) await db.storage.from(BUCKET).remove(p);
+  const { error } = await db.from("staff").delete().eq("id", r.id); if (!error) load(); }
+</script></body></html>
