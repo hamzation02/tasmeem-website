@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><title>Admin | TASMEEM WOODWORKS</title>
+<link rel="icon" href="favicon.png">
+<style>
+:root{--gold:#D4AF37;--walnut:#4A2818;--timber:#8B5E3C;--cream:#FAF7F0}
+*{box-sizing:border-box}body{margin:0;font:16px/1.5 system-ui,Arial,sans-serif;background:var(--cream);color:#2b1a10}
+header{background:var(--walnut);color:#fff;padding:14px 4%;display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid var(--gold)}
+h1{font-size:1.1rem;margin:0}main{max-width:760px;margin:0 auto;padding:20px 4%}
+.card{background:#fff;border-radius:12px;padding:18px;margin-bottom:16px;box-shadow:0 3px 12px rgba(74,40,24,.12)}
+label{display:block;font-weight:600;margin:10px 0 4px;color:var(--walnut)}
+input,textarea{width:100%;padding:11px;border:1.5px solid #bda68f;border-radius:8px;font:inherit;background:var(--cream)}
+button{padding:10px 18px;border:0;border-radius:999px;font:inherit;font-weight:700;cursor:pointer;background:var(--gold);color:var(--walnut);margin:10px 8px 0 0}
+button.alt{background:#eee;color:#333}button.del{background:#a11d1d;color:#fff}
+.row{border-top:1px solid #eee;padding:12px 0}.row b{color:var(--walnut)}.muted{color:#6b5646;font-size:.9rem}
+.err{color:#a11d1d}.hidden{display:none}
+</style></head><body>
+<header><h1>TASMEEM WOODWORKS Admin</h1><button id="out" class="alt hidden">Log out</button></header>
+<main>
+<p id="cfgErr" class="card err hidden">Open admin.html and fill in SUPABASE_URL and SUPABASE_KEY at the top of the script.</p>
+
+<section id="login" class="card hidden"><h2>Admin login</h2>
+<label for="em">Email</label><input id="em" type="email" autocomplete="username">
+<label for="pw">Password</label><input id="pw" type="password" autocomplete="current-password">
+<button id="go">Log in</button><p id="lerr" class="err"></p></section>
+
+<section id="app" class="hidden">
+<div class="card"><h2 id="ft">Add staff member</h2>
+<label for="fn">Full name *</label><input id="fn">
+<label for="ro">Role</label><input id="ro" placeholder="e.g. Carpenter, Supervisor">
+<label for="ph">Phone</label><input id="ph" type="tel">
+<label for="se">Email</label><input id="se" type="email">
+<label for="sd">Start date</label><input id="sd" type="date">
+<label for="nt">Notes</label><textarea id="nt" rows="3"></textarea>
+<p class="muted">Do not store NIN, bank details or ID photos here.</p>
+<button id="save">Save</button><button id="cancel" class="alt hidden">Cancel edit</button><p id="ferr" class="err"></p></div>
+<div class="card"><h2>Staff list</h2><input id="q" placeholder="Search by name or role"><div id="list"></div></div>
+</section></main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+// ===== FILL THESE IN (Supabase -> Project Settings -> API) =====
+const SUPABASE_URL = "https://vmfcjvgwazutzlfmhddk.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZtZmNqdmd3YXp1dHpsZm1oZGRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMxMzAyNDgsImV4cCI6MjEwODcwNjI0OH0.th8McSLPqZonU5zZHj_27Xin0lUv_KMwhbqTtOSJKfA"; // anon/publishable key ONLY. Never the service_role key.
+// ================================================================
+const $ = id => document.getElementById(id);
+let db, rows = [], editId = null;
+if (SUPABASE_URL.startsWith("PASTE") || SUPABASE_KEY.startsWith("PASTE")) { $("cfgErr").classList.remove("hidden"); }
+else {
+  db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  db.auth.onAuthStateChange((_e, s) => show(!!s));
+    db.auth.getSession().then(r => show(!!r.data.session));
+}
+function show(on){ $("login").classList.toggle("hidden", on); $("app").classList.toggle("hidden", !on); $("out").classList.toggle("hidden", !on); if(on) load(); }
+$("go").onclick = async () => {
+  $("lerr").textContent = "";
+  const { error } = await db.auth.signInWithPassword({ email: $("em").value.trim(), password: $("pw").value });
+  if (error) $("lerr").textContent = "Login failed. Check your email and password.";
+};
+$("out").onclick = () => db.auth.signOut();
+async function load(){
+  const { data, error } = await db.from("staff").select("*").order("full_name");
+  if (error) { $("list").textContent = "Could not load staff."; return; }
+  rows = data; draw();
+}
+function draw(){
+  const q = $("q").value.toLowerCase(), box = $("list"); box.textContent = "";
+  const f = rows.filter(r => (r.full_name + " " + (r.role||"")).toLowerCase().includes(q));
+  if (!f.length) { box.textContent = "No staff found."; return; }
+  f.forEach(r => {
+    const d = document.createElement("div"); d.className = "row";
+    const b = document.createElement("b"); b.textContent = r.full_name;
+    const m = document.createElement("div"); m.className = "muted";
+    m.textContent = [r.role, r.phone, r.email, r.start_date && ("Started " + r.start_date)].filter(Boolean).join(" • ");
+    d.append(b, m);
+    if (r.notes) { const n = document.createElement("div"); n.textContent = r.notes; d.append(n); }
+    const e = document.createElement("button"); e.className = "alt"; e.textContent = "Edit"; e.onclick = () => edit(r);
+    const x = document.createElement("button"); x.className = "del"; x.textContent = "Delete"; x.onclick = () => remove(r);
+    d.append(e, x); box.append(d);
+  });
+}
+$("q").oninput = draw;
+function edit(r){ editId = r.id; $("ft").textContent = "Edit staff member"; $("cancel").classList.remove("hidden");
+  $("fn").value=r.full_name; $("ro").value=r.role||""; $("ph").value=r.phone||""; $("se").value=r.email||""; $("sd").value=r.start_date||""; $("nt").value=r.notes||"";
+  window.scrollTo({top:0,behavior:"smooth"}); }
+function reset(){ editId=null; $("ft").textContent="Add staff member"; $("cancel").classList.add("hidden"); ["fn","ro","ph","se","sd","nt"].forEach(i=>$(i).value=""); }
+$("cancel").onclick = reset;
+$("save").onclick = async () => {
+  $("ferr").textContent = "";
+  const rec = { full_name:$("fn").value.trim(), role:$("ro").value.trim()||null, phone:$("ph").value.trim()||null, email:$("se").value.trim()||null, start_date:$("sd").value||null, notes:$("nt").value.trim()||null };
+  if (!rec.full_name) { $("ferr").textContent = "Full name is required."; return; }
+  const { error } = editId ? await db.from("staff").update(rec).eq("id", editId) : await db.from("staff").insert(rec);
+  if (error) { $("ferr").textContent = "Could not save. Check you are logged in as the admin."; return; }
+  reset(); load();
+};
+async function remove(r){ if (!confirm("Delete " + r.full_name + "?")) return;
+  const { error } = await db.from("staff").delete().eq("id", r.id); if (!error) load(); }
+</script></body></html>
