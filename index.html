@@ -14,6 +14,17 @@
 <meta name="theme-color" content="#4A2818">
 <link rel="icon" href="favicon.png" type="image/png">
 <link rel="stylesheet" href="style.css">
+<style>
+/* CAC registration display (added) */
+.company-info{margin-top:22px;background:#fff;border:1px solid rgba(139,94,60,.25);border-left:4px solid var(--gold);border-radius:12px;padding:16px 18px}
+.company-info h3{margin:0 0 10px}
+.company-info dl{margin:0;display:grid;gap:10px}
+.company-info dt{font:600 .78rem "Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--timber)}
+.company-info dd{margin:2px 0 0;font-weight:600;color:var(--walnut);overflow-wrap:anywhere}
+.company-info .regnum{letter-spacing:.08em}
+.regno{display:block;margin-bottom:8px;color:var(--gold);font:600 .9rem "Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;letter-spacing:.06em}
+.regno b{color:#fff;letter-spacing:.1em}
+</style>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"HomeAndConstructionBusiness","name":"TASMEEM WOODWORKS","url":"https://tasmeemwoodworks.com/","email":"tasmeemwoodworks@gmail.com","telephone":"+2347040993252","areaServed":["Abuja","Suleja","Niger State"],"description":"Carpentry, joinery and woodwork services in Abuja, Suleja and Niger State, Nigeria."}
 </script>
@@ -57,6 +68,14 @@
       <div class="mv">
         <div><h3>Our Mission</h3><p>To deliver dependable, well-finished woodwork that meets our clients' needs, on clear terms and with honest communication.</p></div>
         <div><h3>Our Vision</h3><p>To be a trusted name in carpentry and woodwork, known for quality work and reliable service.</p></div>
+      </div>
+      <div class="company-info" aria-label="Company information">
+        <h3>Company Information</h3>
+        <dl>
+          <div><dt>Business name</dt><dd>TASMEEM WOODWORKS</dd></div>
+          <div><dt>CAC Registration No</dt><dd class="regnum">RC-9967237</dd></div>
+          <div><dt>Service areas</dt><dd>Abuja, Suleja and Niger State</dd></div>
+        </dl>
       </div>
     </div>
     <figure class="frame"><img src="site-3.jpg" alt="Timber formwork and reinforcement on a construction site in Abuja" loading="lazy"><figcaption>Site carpentry on a construction project</figcaption></figure>
@@ -157,7 +176,8 @@
         <li><b>Email</b><a href="mailto:tasmeemwoodworks@gmail.com">tasmeemwoodworks@gmail.com</a></li>
         <li><b>Office address</b><span>Zuma Rock Resort, Zuba, Abuja, Nigeria</span></li>
         <li><b>Service areas</b><span>Abuja, Suleja and Niger State</span></li>
-       <li><b>Business hours</b><span>Open 24 hours, 7 days a week</span></li>
+        <li><b>Business hours</b><span>Open 24 hours, 7 days a week</span></li>
+        <li><b>CAC registration no.</b><span>RC-9967237</span></li>
       </ul>
     </div>
     <div>
@@ -180,7 +200,7 @@
     <div><b>Links</b><a href="#home">Home</a><a href="#about">About</a><a href="#services">Services</a><a href="#projects">Projects</a><a href="#contact">Contact</a></div>
     <div><b>Contact</b><a href="tel:+2347040993252">+234 704 099 3252</a><a href="mailto:tasmeemwoodworks@gmail.com">tasmeemwoodworks@gmail.com</a><span>Abuja, Suleja &amp; Niger State</span></div>
   </div>
-  <p class="copy">&copy; <span id="year"></span> TASMEEM WOODWORKS. Thank you for considering us for your next woodwork project.</p>
+  <p class="copy"><span class="regno">CAC Registration No: <b>RC-9967237</b></span>&copy; <span id="year"></span> TASMEEM WOODWORKS. Thank you for considering us for your next woodwork project.</p>
 </footer>
 
 <a class="wa-float" data-wa="" href="#contact" aria-label="Chat on WhatsApp"><svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><path fill="#fff" d="M16 3a13 13 0 0 0-11 19.8L3 29l6.4-2A13 13 0 1 0 16 3zm0 2.4a10.6 10.6 0 1 1-5.6 19.6l-.4-.2-3.800 1.200 1.200-3.700-.3-.4A10.600 10.600 0 0 1 16 5.400zm-4 5.200c-.3 0-.7.100-1 .5-.4.400-1.300 1.300-1.300 3.100s1.300 3.600 1.500 3.800c.2.300 2.600 4.100 6.400 5.600 3.100 1.200 3.700 1 4.400.9.700-.1 2.200-.9 2.500-1.800.3-.9.300-1.600.2-1.800-.1-.2-.4-.3-.8-.5-.4-.2-2.200-1.100-2.500-1.200-.4-.1-.6-.2-.9.200-.3.400-1 1.200-1.200 1.500-.2.200-.4.300-.8.100-.4-.2-1.600-.6-3-1.900-1.100-1-1.900-2.300-2.100-2.700-.2-.4 0-.6.200-.8l.6-.7c.2-.2.200-.4.400-.7.100-.3.100-.5 0-.7-.1-.2-.9-2.100-1.200-2.900-.3-.7-.6-.6-.9-.6z"/></svg></a>
